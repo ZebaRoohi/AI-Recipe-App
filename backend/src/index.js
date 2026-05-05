@@ -6,7 +6,7 @@ import { requireAuth } from './middleware/authMiddleware.js'
 import metaRoutes from './routes/meta.js'
 import dishRoutes from './routes/dish.js'
 import pool from './db.js'
-
+import aiRoutes from './routes/ai.js'
 dotenv.config()
 
 const app = express()
@@ -27,6 +27,7 @@ app.get('/api/me', requireAuth, async (req, res) => {
 })
 app.use('/api/meta', metaRoutes)
 app.use('/api/dishes', dishRoutes)
+app.use('/api/ai',aiRoutes)
 
 
 const PORT = process.env.PORT || 4000
