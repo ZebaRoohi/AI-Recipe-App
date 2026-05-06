@@ -6,6 +6,9 @@ export const API_ENDPOINTS = {
   META:{
     STATES:'/meta/states',
     CATEGORIES:'/meta/categories',
+  },
+  AI:{
+    DISHES:'/ai/dishes'
   }
 }
 

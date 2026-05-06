@@ -12,6 +12,15 @@ import {
 import { AuthContext } from '../state/AuthContext'
 import Dropdown from '../components/DropDown';
 import { getStates, getCategories } from '../api/statescategories'
+import { getDishes } from '../api/aidishes';
+import {
+  List,
+  ListItem,
+  ListItemButton,
+  ListItemText,
+  Divider
+} from '@mui/material'
+import CircularProgress from '@mui/material/CircularProgress';
 
 export default function Dashboard() {
   const auth = useContext(AuthContext)
@@ -28,6 +37,9 @@ const [categories, setCategories] = useState<any[]>([])
 const [aiDishes, setAiDishes] = useState<string[]>([])
 const [selectedState, setSelectedState] = useState<number | ''>('')
 const [selectedCategory, setSelectedCategory] = useState<number | ''>('')
+const[loading,setLoading]=useState(false)
+const[error,setError]=useState('')
+
 
   useEffect(()=>{
     async function fetchMeta(){
@@ -52,6 +64,34 @@ const categoryOptions = (categories || []).map((c: any) => ({
   label: c.name,
   value: c.id
 }))
+
+const handleSearch = async () => {
+  try{
+    setLoading(true)
+    setError('')
+    const stateName=stateOptions.find(s=>s.value===selectedState)?.label
+    const categoryName=categoryOptions.find(c=>c.value===selectedCategory)?.label
+    if(!stateName || !categoryName){
+      alert('Please select both state and category')
+      return
+    }
+    const res=await getDishes({ state: stateName, category: categoryName })
+    setAiDishes(res.data.dishes || [])
+    if(res.data.dishes.length===0||!res.data.dishes){
+      setError('No dishes found for the selected state and category.')
+    }
+  } catch (err) {
+    console.error('Error fetching AI dishes:', err)
+    setError('Failed to fetch dishes. Please try again later.')
+  }
+  finally {
+    setLoading(false)
+  }
+}
+
+const handleDishClick = (dishName: string) => {
+  console.log('Clicked dish:', dishName)
+}
   return (
     <>
       <AppBar
@@ -120,6 +160,7 @@ const categoryOptions = (categories || []).map((c: any) => ({
 
       <Button
         variant="contained"
+        onClick={handleSearch}
         sx={{
           height: '56px',
           minWidth: '120px',
@@ -132,10 +173,55 @@ const categoryOptions = (categories || []).map((c: any) => ({
       </Button>
     </Box>
 
-    {/* <Typography sx={{ mt: 3 }}>
-      {recipe && `Recipe for ${dish}`}
-    </Typography> */}
-        </Container>
+  <Box mt={6}>
+    {loading && (
+    <Box display="flex" justifyContent="center" mt={4}>
+    <CircularProgress />
+  </Box>
+    )}
+
+    {error && (
+      <Typography textAlign="center" color="error">
+        {error}
+      </Typography>
+    )}
+{!loading && !error && aiDishes.length > 0 && (
+  <Box mt={4}>
+    <List
+      sx={{
+        bgcolor: '#4f6f1f',
+        borderRadius: 2,
+        boxShadow: 2
+      }}
+    >
+      {aiDishes.map((dish, index) => (
+        <React.Fragment key={index}>
+          <ListItem disablePadding>
+            <ListItemButton
+              onClick={() => handleDishClick(dish)}
+              sx={{
+                '&:hover': {
+                  backgroundColor: '#3e5718',
+                  cursor: 'pointer',
+                  color: '#fff176'
+                }
+              }}
+            >
+              <ListItemText
+                primary={dish}
+              />
+            </ListItemButton>
+          </ListItem>
+
+          {index !== aiDishes.length - 1 && <Divider />}
+        </React.Fragment>
+      ))}
+    </List>
+  </Box>
+)}
+
+</Box>
+ </Container>
     </>
   )
 }
