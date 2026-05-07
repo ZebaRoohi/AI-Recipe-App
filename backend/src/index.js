@@ -7,6 +7,7 @@ import metaRoutes from './routes/meta.js'
 import dishRoutes from './routes/dish.js'
 import pool from './db.js'
 import aiRoutes from './routes/ai.js'
+import recipeRoutes from './routes/recipeRoutes.js'
 dotenv.config()
 
 const app = express()
@@ -28,6 +29,7 @@ app.get('/api/me', requireAuth, async (req, res) => {
 app.use('/api/meta', metaRoutes)
 app.use('/api/dishes', dishRoutes)
 app.use('/api/ai',aiRoutes)
+app.use('/api/recipes',recipeRoutes)
 
 
 const PORT = process.env.PORT || 4000
