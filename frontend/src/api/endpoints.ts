@@ -9,6 +9,9 @@ export const API_ENDPOINTS = {
   },
   AI:{
     DISHES:'/ai/dishes'
+  },
+  RECIPE: {
+    DETAILS: '/recipes'
   }
 }
 

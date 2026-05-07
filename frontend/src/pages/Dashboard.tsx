@@ -12,7 +12,7 @@ import {
 import { AuthContext } from '../state/AuthContext'
 import Dropdown from '../components/DropDown';
 import { getStates, getCategories } from '../api/statescategories'
-import { getDishes } from '../api/aidishes';
+import { getDishes, getRecipeDetails } from '../api/aidishes';
 import {
   List,
   ListItem,
@@ -39,7 +39,7 @@ const [selectedState, setSelectedState] = useState<number | ''>('')
 const [selectedCategory, setSelectedCategory] = useState<number | ''>('')
 const[loading,setLoading]=useState(false)
 const[error,setError]=useState('')
-
+const [selectedRecipe, setSelectedRecipe] =useState<any>(null)
 
   useEffect(()=>{
     async function fetchMeta(){
@@ -89,8 +89,17 @@ const handleSearch = async () => {
   }
 }
 
-const handleDishClick = (dishName: string) => {
-  console.log('Clicked dish:', dishName)
+const handleDishClick = async (dishName: string) => {
+  try{
+    setLoading(true)
+    const res=await getRecipeDetails(dishName)
+    setSelectedRecipe(res.data)
+  }catch(err){
+    console.error('Error fetching recipe details:', err)
+    setError('Failed to fetch recipe details. Please try again later.')
+  }finally {
+    setLoading(false) 
+  }
 }
   return (
     <>
@@ -219,7 +228,29 @@ const handleDishClick = (dishName: string) => {
     </List>
   </Box>
 )}
-
+{
+  selectedRecipe && (
+    <Box mt={6} p={3} bgcolor="#e8f5e9" borderRadius={2} boxShadow={2}>
+      <Typography variant="h6" gutterBottom>{selectedRecipe.name}</Typography>
+      <Typography variant="subtitle1" gutterBottom>Ingredients:</Typography>
+      <List>
+        {selectedRecipe.ingredients.map((ingredient: string, index: number) => (
+          <ListItem key={index}>
+            <ListItemText primary={ingredient} />
+          </ListItem>
+        ))}
+      </List>
+      <Typography variant="subtitle1" gutterBottom>Steps:</Typography>
+      <List>
+        {selectedRecipe.steps.map((step: string, index: number) => (
+          <ListItem key={index}>
+            <ListItemText primary={step} />
+          </ListItem>
+        ))}
+      </List>
+    </Box>
+  )
+}
 </Box>
  </Container>
     </>
