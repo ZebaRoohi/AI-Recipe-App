@@ -12,13 +12,15 @@ import {
 import { AuthContext } from '../state/AuthContext'
 import Dropdown from '../components/DropDown';
 import { getStates, getCategories } from '../api/statescategories'
-import { getDishes, getRecipeDetails } from '../api/aidishes';
+import { getDishes, getDishImage, getRecipeDetails } from '../api/aidishes';
 import {
   List,
   ListItem,
   ListItemButton,
   ListItemText,
-  Divider
+  Divider,
+  CardMedia,
+  Fade
 } from '@mui/material'
 import CircularProgress from '@mui/material/CircularProgress';
 
@@ -37,9 +39,12 @@ const [categories, setCategories] = useState<any[]>([])
 const [aiDishes, setAiDishes] = useState<string[]>([])
 const [selectedState, setSelectedState] = useState<number | ''>('')
 const [selectedCategory, setSelectedCategory] = useState<number | ''>('')
-const[loading,setLoading]=useState(false)
+const [loadingDishes, setLoadingDishes] = useState(false)
+const [loadingRecipe, setLoadingRecipe] = useState(false)
 const[error,setError]=useState('')
 const [selectedRecipe, setSelectedRecipe] =useState<any>(null)
+const [activeDish, setActiveDish] = useState('')
+const [recipeImage, setRecipeImage] = useState('')
 
   useEffect(()=>{
     async function fetchMeta(){
@@ -67,7 +72,7 @@ const categoryOptions = (categories || []).map((c: any) => ({
 
 const handleSearch = async () => {
   try{
-    setLoading(true)
+    setLoadingDishes(true)
     setError('')
     const stateName=stateOptions.find(s=>s.value===selectedState)?.label
     const categoryName=categoryOptions.find(c=>c.value===selectedCategory)?.label
@@ -85,20 +90,23 @@ const handleSearch = async () => {
     setError('Failed to fetch dishes. Please try again later.')
   }
   finally {
-    setLoading(false)
+    setLoadingDishes(false)
   }
 }
 
 const handleDishClick = async (dishName: string) => {
   try{
-    setLoading(true)
+    setLoadingRecipe(true)
     const res=await getRecipeDetails(dishName)
     setSelectedRecipe(res.data)
+    setActiveDish(dishName) 
+    const dishImage = await getDishImage(dishName)
+    setRecipeImage(dishImage)
   }catch(err){
     console.error('Error fetching recipe details:', err)
     setError('Failed to fetch recipe details. Please try again later.')
   }finally {
-    setLoading(false) 
+    setLoadingRecipe(false) 
   }
 }
   return (
@@ -183,7 +191,7 @@ const handleDishClick = async (dishName: string) => {
     </Box>
 
   <Box mt={6}>
-    {loading && (
+    {loadingDishes && (
     <Box display="flex" justifyContent="center" mt={4}>
     <CircularProgress />
   </Box>
@@ -194,7 +202,7 @@ const handleDishClick = async (dishName: string) => {
         {error}
       </Typography>
     )}
-{!loading && !error && aiDishes.length > 0 && (
+{!error && aiDishes.length > 0 && (
   <Box mt={4}>
     <List
       sx={{
@@ -210,7 +218,9 @@ const handleDishClick = async (dishName: string) => {
               onClick={() => handleDishClick(dish)}
               sx={{
                 '&:hover': {
-                  backgroundColor: '#3e5718',
+                  backgroundColor:   activeDish === dish
+                ? '#3e5718'
+                : 'transparent',
                   cursor: 'pointer',
                   color: '#fff176'
                 }
@@ -228,30 +238,71 @@ const handleDishClick = async (dishName: string) => {
     </List>
   </Box>
 )}
-{
-  selectedRecipe && (
-    <Box mt={6} p={3} bgcolor="#e8f5e9" borderRadius={2} boxShadow={2}>
-      <Typography variant="h6" gutterBottom>{selectedRecipe.name}</Typography>
-      <Typography variant="subtitle1" gutterBottom>Ingredients:</Typography>
+<Box mt={6}>
+  {loadingRecipe && (
+    <Box display="flex" justifyContent="center" mt={4}>
+      <CircularProgress />
+    </Box>
+  )}
+
+  {!loadingRecipe && selectedRecipe && (
+    <Fade in={!!selectedRecipe} timeout={500}>
+      <Box
+        p={3}
+        bgcolor="#FFD54F"
+        borderRadius={2}
+        boxShadow={2}
+      color="#4f6f1f"
+    >
+      {/* <Typography variant="h6" gutterBottom>
+        {selectedRecipe.name}
+      </Typography> */}
+      {recipeImage && (
+  <CardMedia
+    component="img"
+    height="300"
+    image={recipeImage}
+    alt={selectedRecipe.name}
+    sx={{
+      borderRadius: 2,
+      mb: 2,
+      objectFit: 'cover'
+    }}
+  />
+)}
+
+      <Typography variant="subtitle1" gutterBottom>
+        Ingredients:
+      </Typography>
+
       <List>
-        {selectedRecipe.ingredients.map((ingredient: string, index: number) => (
-          <ListItem key={index}>
-            <ListItemText primary={ingredient} />
-          </ListItem>
-        ))}
+        {selectedRecipe.ingredients.map(
+          (ingredient: string, index: number) => (
+            <ListItem key={index}>
+              <ListItemText primary={ingredient} />
+            </ListItem>
+          )
+        )}
       </List>
-      <Typography variant="subtitle1" gutterBottom>Steps:</Typography>
+
+      <Typography variant="subtitle1" gutterBottom>
+        Steps:
+      </Typography>
+
       <List>
-        {selectedRecipe.steps.map((step: string, index: number) => (
-          <ListItem key={index}>
-            <ListItemText primary={step} />
-          </ListItem>
-        ))}
+        {selectedRecipe.steps.map(
+          (step: string, index: number) => (
+            <ListItem key={index}>
+              <ListItemText primary={step} />
+            </ListItem>
+          )
+        )}
       </List>
     </Box>
-  )
-}
+</Fade>
+  )}
 </Box>
+    </Box>
  </Container>
     </>
   )

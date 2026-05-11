@@ -32,3 +32,36 @@ export const getRecipeDetails = (
   client.get(
     `${API_ENDPOINTS.RECIPE.DETAILS}/${dishName}`
   )
+
+export const getDishImage = async (
+  dishName: string
+) => {
+  try {
+    const query = encodeURIComponent(`${dishName} indian food`)
+    const url = `https://api.unsplash.com/search/photos?query=${query}&per_page=1`
+    const response = await fetch(url, {
+      headers: {
+        Authorization: `Client-ID ${import.meta.env.VITE_UNSPLASH_ACCESS_KEY}`
+      }
+    })
+
+    if (!response.ok) {
+      console.error('Unsplash API error', response.status, response.statusText)
+      return `https://source.unsplash.com/featured/?${query}`
+    }
+
+    const data = await response.json()
+
+    const imageUrl = data.results?.[0]?.urls?.regular
+    if (imageUrl) return imageUrl
+
+    // fallback to source.unsplash (no API key required)
+    return `https://source.unsplash.com/featured/?${query}`
+  } catch (err) {
+    console.error('Error fetching dish image from Unsplash:', err)
+    const fallback = `https://source.unsplash.com/featured/?${encodeURIComponent(
+      dishName + ' indian food'
+    )}`
+    return fallback
+  }
+}
