@@ -4,6 +4,7 @@ import LoginPage from '../pages/LoginPage'
 import Dashboard from '../pages/Dashboard'
 import { AuthContext } from '../state/AuthContext'
 import RegisterPage from '../pages/RegisterPage'
+import Favorites from '../pages/Favorites'
 
 const PrivateRoute: React.FC<{ children: JSX.Element }> = ({ children }) => {
   const auth = useContext(AuthContext)
@@ -18,6 +19,7 @@ export default function AppRoutes() {
         <Route path="/" element={<LoginPage />} />
         <Route path="/register" element={<RegisterPage />} />
         <Route path="/dashboard" element={<PrivateRoute><Dashboard /></PrivateRoute>} />
+        <Route path="/favorites" element={<PrivateRoute><Favorites /></PrivateRoute>} />
       </Routes>
     </BrowserRouter>
   )

@@ -23,6 +23,9 @@ import {
   Fade
 } from '@mui/material'
 import CircularProgress from '@mui/material/CircularProgress';
+import Sidebar from '../components/SideBar';
+import FavoriteIcon from '@mui/icons-material/Favorite'
+import FavoriteBorderIcon from '@mui/icons-material/FavoriteBorder'
 
 export default function Dashboard() {
   const auth = useContext(AuthContext)
@@ -45,6 +48,7 @@ const[error,setError]=useState('')
 const [selectedRecipe, setSelectedRecipe] =useState<any>(null)
 const [activeDish, setActiveDish] = useState('')
 const [recipeImage, setRecipeImage] = useState('')
+const[favorites,setFavorites]=useState<any[]>([])
 
   useEffect(()=>{
     async function fetchMeta(){
@@ -82,7 +86,7 @@ const handleSearch = async () => {
     }
     const res=await getDishes({ state: stateName, category: categoryName })
     setAiDishes(res.data.dishes || [])
-    if(res.data.dishes.length===0||!res.data.dishes){
+    if (!res.data.dishes || res.data.dishes.length === 0){
       setError('No dishes found for the selected state and category.')
     }
   } catch (err) {
@@ -109,201 +113,229 @@ const handleDishClick = async (dishName: string) => {
     setLoadingRecipe(false) 
   }
 }
-  return (
-    <>
-      <AppBar
-        position="static"
-        sx={{
-          background: '#4f6f1f',
-          boxShadow: 'none'
-        }}
-      >
-        <Toolbar sx={{ display: 'flex', alignItems: 'center' }}>
-          <Box sx={{ ml: 'auto' }}>
-            <Button
-              variant="outlined"
-              onClick={() => auth?.logout()}
+useEffect(() => {
+  const storedFavs =
+    JSON.parse(localStorage.getItem('favorites') || '[]')
+
+  setFavorites(storedFavs)
+}, [])
+const handleFavorite = () => {
+  if (!selectedRecipe) return
+
+  const alreadyExists = favorites.find(
+    (item) => item.name === selectedRecipe.name
+  )
+
+  if (alreadyExists) {
+    const updatedFavs = favorites.filter(
+      (item) => item.name !== selectedRecipe.name
+    )
+
+    setFavorites(updatedFavs)
+
+    localStorage.setItem(
+      'favorites',
+      JSON.stringify(updatedFavs)
+    )
+  } else {
+    const newFavs = [
+      ...favorites,
+      {
+        ...selectedRecipe,
+        image: recipeImage
+      }
+    ]
+
+    setFavorites(newFavs)
+
+    localStorage.setItem(
+      'favorites',
+      JSON.stringify(newFavs)
+    )
+  }
+}
+return (
+  <>
+    <Box sx={{ display: 'flex', minHeight: 'calc(100vh - 64px)' }}>
+      <Sidebar />
+      <Box sx={{ flexGrow: 1, p: 3 }}>
+        <Container maxWidth="md" sx={{ mt: 6, textAlign: 'left' }}>
+          <Typography
+            variant="h5"
+            gutterBottom
+            sx={{
+              color: '#4f6f1f',
+              fontWeight: 500
+            }}
+          >
+            Welcome{' '}
+            <Box
+              component="span"
               sx={{
-                color: '#FFD54F',
-                borderColor: '#FFD54F',
-                textTransform: 'none',
-                '&:hover': {
-                  borderColor: '#fff176',
-                  backgroundColor: 'rgba(255,255,255,0.1)'
-                }
+                fontWeight: 'bold',
+                color: '#2e7d32'
               }}
             >
-              Logout
+              {userName}
+            </Box>
+            ! {greeting}
+          </Typography>
+          <Box display="flex" gap={2} mt={4} alignItems="center">
+            <Dropdown
+              label="State"
+              value={selectedState}
+              onChange={setSelectedState}
+              options={stateOptions}
+            />
+            <Dropdown
+              label="Category"
+              value={selectedCategory}
+              onChange={setSelectedCategory}
+              options={categoryOptions}
+            />
+            <Button
+              variant="contained"
+              onClick={handleSearch}
+              sx={{
+                height: '56px',
+                minWidth: '120px',
+                background: '#4f6f1f',
+                '&:hover': { background: '#3e5718' },
+                color: '#FFD54F'
+              }}
+            >
+              Search
             </Button>
           </Box>
-        </Toolbar>
-      </AppBar>
-    <Container maxWidth="md" sx={{ mt: 6, textAlign: 'left' }}>
-      <Typography
-        variant="h5"
-        gutterBottom
-        sx={{
-          color: '#4f6f1f',
-          fontWeight: 500
-        }}
-      >
-        Welcome{' '}
-        <Box
-          component="span"
-          sx={{
-            fontWeight: 'bold',
-            color: '#2e7d32'
-          }}
-        >
-          {userName}
-        </Box>
-        ! {greeting}
-      </Typography>
-
-    <Box display="flex" gap={2} mt={4} alignItems="center">
-      <Dropdown
-        label="State"
-        value={selectedState}
-        onChange={setSelectedState}
-        options={stateOptions}
-      />
-
-      <Dropdown
-        label="Category"
-        value={selectedCategory}
-        onChange={setSelectedCategory}
-        options={categoryOptions}
-      />
-
-      <Button
-        variant="contained"
-        onClick={handleSearch}
-        sx={{
-          height: '56px',
-          minWidth: '120px',
-          background: '#4f6f1f',
-          '&:hover': { background: '#3e5718' },
-          color: '#FFD54F'
-        }}
-      >
-        Search
-      </Button>
+          <Box mt={6}>
+            {loadingDishes && (
+              <Box display="flex" justifyContent="center" mt={4}>
+                <CircularProgress />
+              </Box>
+            )}
+            {error && (
+              <Typography textAlign="center" color="error">
+                {error}
+              </Typography>
+            )}
+            {!error && aiDishes.length > 0 && (
+              <Box mt={4}>
+                <List
+                  sx={{
+                    bgcolor: '#4f6f1f',
+                    borderRadius: 2,
+                    boxShadow: 2
+                  }}
+                >
+                  {aiDishes.map((dish, index) => (
+                    <React.Fragment key={index}>
+                      <ListItem disablePadding>
+                        <ListItemButton
+                          onClick={() => handleDishClick(dish)}
+                          sx={{
+                            backgroundColor:
+                              activeDish === dish
+                                ? '#3e5718'
+                                : 'transparent',
+                            '&:hover': {
+                              backgroundColor: '#3e5718',
+                              color: '#fff176'
+                            }
+                          }}
+                        >
+                          <ListItemText primary={dish} />
+                        </ListItemButton>
+                      </ListItem>
+                      {index !== aiDishes.length - 1 && <Divider />}
+                    </React.Fragment>
+                  ))}
+                </List>
+              </Box>
+            )}
+            <Box mt={6}>
+              {loadingRecipe && (
+                <Box display="flex" justifyContent="center" mt={4}>
+                  <CircularProgress />
+                </Box>
+              )}
+              {!loadingRecipe && selectedRecipe && (
+                <Fade in={!!selectedRecipe} timeout={500}>
+                  <Box
+                    p={3}
+                    bgcolor="#FFD54F"
+                    borderRadius={2}
+                    boxShadow={2}
+                    color="#4f6f1f"
+                  >
+                    {recipeImage && (
+                      <CardMedia
+                        component="img"
+                        height="300"
+                        image={recipeImage}
+                        alt={selectedRecipe.name}
+                        sx={{
+                          borderRadius: 2,
+                          mb: 2,
+                          objectFit: 'cover'
+                        }}
+                      />
+                    )}
+                 
+                 <Box
+                  display="flex"
+                  justifyContent="space-between"
+                  alignItems="center"
+                  mb={2}
+                >
+                  <Typography
+                    variant="h5"
+                    fontWeight="bold"
+                  >
+                    {selectedRecipe.name}
+                  </Typography>
+                <IconButton onClick={handleFavorite}>
+                  {favorites.find(
+                    (item) => item.name === selectedRecipe.name
+                  ) ? (
+                    <FavoriteIcon sx={{ color: 'red' }} />
+                  ) : (
+                    <FavoriteBorderIcon />
+                  )}
+                </IconButton>
+                </Box>
+                    <Typography variant="subtitle1" gutterBottom>
+                      Ingredients:
+                    </Typography> 
+                      <List>
+                      {selectedRecipe.ingredients.map(
+                        (ingredient: string, index: number) => (
+                          <ListItem key={index}>
+                            <ListItemText primary={ingredient} />
+                          </ListItem>
+                        )
+                      )}
+                    </List>
+                    <Typography variant="subtitle1" gutterBottom>
+                      Steps:
+                    </Typography>
+                    <List>
+                      {selectedRecipe.steps.map(
+                        (step: string, index: number) => (
+                          <ListItem key={index}>
+                            <ListItemText primary={step} />
+                          </ListItem>
+                        )
+                      )}
+                    </List>
+                  </Box>
+                </Fade>
+              )}
+            </Box>
+          </Box>
+        </Container>
+      </Box>
     </Box>
-
-  <Box mt={6}>
-    {loadingDishes && (
-    <Box display="flex" justifyContent="center" mt={4}>
-    <CircularProgress />
-  </Box>
-    )}
-
-    {error && (
-      <Typography textAlign="center" color="error">
-        {error}
-      </Typography>
-    )}
-{!error && aiDishes.length > 0 && (
-  <Box mt={4}>
-    <List
-      sx={{
-        bgcolor: '#4f6f1f',
-        borderRadius: 2,
-        boxShadow: 2
-      }}
-    >
-      {aiDishes.map((dish, index) => (
-        <React.Fragment key={index}>
-          <ListItem disablePadding>
-            <ListItemButton
-              onClick={() => handleDishClick(dish)}
-              sx={{
-                '&:hover': {
-                  backgroundColor:   activeDish === dish
-                ? '#3e5718'
-                : 'transparent',
-                  cursor: 'pointer',
-                  color: '#fff176'
-                }
-              }}
-            >
-              <ListItemText
-                primary={dish}
-              />
-            </ListItemButton>
-          </ListItem>
-
-          {index !== aiDishes.length - 1 && <Divider />}
-        </React.Fragment>
-      ))}
-    </List>
-  </Box>
-)}
-<Box mt={6}>
-  {loadingRecipe && (
-    <Box display="flex" justifyContent="center" mt={4}>
-      <CircularProgress />
-    </Box>
-  )}
-
-  {!loadingRecipe && selectedRecipe && (
-    <Fade in={!!selectedRecipe} timeout={500}>
-      <Box
-        p={3}
-        bgcolor="#FFD54F"
-        borderRadius={2}
-        boxShadow={2}
-      color="#4f6f1f"
-    >
-      {/* <Typography variant="h6" gutterBottom>
-        {selectedRecipe.name}
-      </Typography> */}
-      {recipeImage && (
-  <CardMedia
-    component="img"
-    height="300"
-    image={recipeImage}
-    alt={selectedRecipe.name}
-    sx={{
-      borderRadius: 2,
-      mb: 2,
-      objectFit: 'cover'
-    }}
-  />
-)}
-
-      <Typography variant="subtitle1" gutterBottom>
-        Ingredients:
-      </Typography>
-
-      <List>
-        {selectedRecipe.ingredients.map(
-          (ingredient: string, index: number) => (
-            <ListItem key={index}>
-              <ListItemText primary={ingredient} />
-            </ListItem>
-          )
-        )}
-      </List>
-
-      <Typography variant="subtitle1" gutterBottom>
-        Steps:
-      </Typography>
-
-      <List>
-        {selectedRecipe.steps.map(
-          (step: string, index: number) => (
-            <ListItem key={index}>
-              <ListItemText primary={step} />
-            </ListItem>
-          )
-        )}
-      </List>
-    </Box>
-</Fade>
-  )}
-</Box>
-    </Box>
- </Container>
-    </>
-  )
+  </>
+)
 }
+

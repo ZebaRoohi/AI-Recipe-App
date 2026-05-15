@@ -12,9 +12,7 @@ export async function getRecipesDetails(req, res) {
 
     const prompt = `
 Give me the recipe for ${dishName}.
-
 Return ONLY valid JSON in this format:
-
 {
   "name": "",
   "ingredients": [],
@@ -23,7 +21,6 @@ Return ONLY valid JSON in this format:
 `;
 
     const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${process.env.GEMINI_API_KEY}`;
-
     const response = await fetch(url, {
       method: "POST",
       headers: {
@@ -39,8 +36,6 @@ Return ONLY valid JSON in this format:
     });
 
     const data = await response.json();
-
-    // Handle Gemini errors
     if (
       response.status === 503 ||
       response.status === 429 ||
@@ -59,8 +54,6 @@ Return ONLY valid JSON in this format:
           "High demand spike"
       });
     }
-
-    // Extract AI text
     const text =
       data.candidates?.[0]?.content?.parts?.[0]?.text;
 
@@ -69,21 +62,14 @@ Return ONLY valid JSON in this format:
         err: "AI returned empty response"
       });
     }
-
-    // Clean markdown
     const cleanedText = text
       .replace(/```json/g, "")
       .replace(/```/g, "")
       .trim();
 
     console.log("Gemini Recipe:", cleanedText);
-
-    // Parse JSON
     const recipe = JSON.parse(cleanedText);
-
-    // Send response
     res.json(recipe);
-
   } catch (err) {
     console.error(
       "Error in getRecipesDetails:",

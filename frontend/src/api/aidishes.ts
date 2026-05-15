@@ -24,6 +24,7 @@ export type RecipeResponse = {
   name: string
   ingredients: string[]
   steps: string[]
+  image?: string
 }
 
 export const getRecipeDetails = (
