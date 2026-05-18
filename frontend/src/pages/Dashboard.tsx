@@ -3,10 +3,7 @@ import {
   Container,
   Typography,
   Button,
-  AppBar,
-  Toolbar,
   Box,
-  Avatar,
   IconButton
 } from '@mui/material'
 import { AuthContext } from '../state/AuthContext'
@@ -19,13 +16,14 @@ import {
   ListItemButton,
   ListItemText,
   Divider,
-  CardMedia,
   Fade
 } from '@mui/material'
 import CircularProgress from '@mui/material/CircularProgress';
 import Sidebar from '../components/SideBar';
 import FavoriteIcon from '@mui/icons-material/Favorite'
 import FavoriteBorderIcon from '@mui/icons-material/FavoriteBorder'
+import Snackbar from '@mui/material/Snackbar'
+import Alert from '@mui/material/Alert'
 
 export default function Dashboard() {
   const auth = useContext(AuthContext)
@@ -49,6 +47,9 @@ const [selectedRecipe, setSelectedRecipe] =useState<any>(null)
 const [activeDish, setActiveDish] = useState('')
 const [recipeImage, setRecipeImage] = useState('')
 const[favorites,setFavorites]=useState<any[]>([])
+const[snackbarOpen,setSnackbarOpen]=useState(false)
+const[snackbarMessage,setSnackbarMessage]=useState('')
+const[snackbarSeverity,setSnackbarSeverity]=useState<'success' | 'error' | 'info'>('success')
 
   useEffect(()=>{
     async function fetchMeta(){
@@ -105,9 +106,9 @@ const handleDishClick = async (dishName: string) => {
     setSelectedRecipe(res.data)
     setActiveDish(dishName) 
     const dishImage = await getDishImage(dishName)
+    console.log('Fetched dish image URL:', dishImage)
     setRecipeImage(dishImage)
   }catch(err){
-    console.error('Error fetching recipe details:', err)
     setError('Failed to fetch recipe details. Please try again later.')
   }finally {
     setLoadingRecipe(false) 
@@ -116,43 +117,39 @@ const handleDishClick = async (dishName: string) => {
 useEffect(() => {
   const storedFavs =
     JSON.parse(localStorage.getItem('favorites') || '[]')
-
-  setFavorites(storedFavs)
+    setFavorites(storedFavs)
 }, [])
+
 const handleFavorite = () => {
   if (!selectedRecipe) return
-
   const alreadyExists = favorites.find(
     (item) => item.name === selectedRecipe.name
   )
-
   if (alreadyExists) {
-    const updatedFavs = favorites.filter(
-      (item) => item.name !== selectedRecipe.name
+    setSnackbarMessage(
+      'Recipe already exists in favorites'
     )
-
-    setFavorites(updatedFavs)
-
-    localStorage.setItem(
-      'favorites',
-      JSON.stringify(updatedFavs)
-    )
-  } else {
-    const newFavs = [
-      ...favorites,
-      {
-        ...selectedRecipe,
-        image: recipeImage
-      }
-    ]
-
-    setFavorites(newFavs)
-
-    localStorage.setItem(
-      'favorites',
-      JSON.stringify(newFavs)
-    )
+    setSnackbarSeverity('info')
+    setSnackbarOpen(true)
+    return
   }
+  const newFavs = [
+    ...favorites,
+    {
+      ...selectedRecipe,
+      image: recipeImage
+    }
+  ]
+  setFavorites(newFavs)
+  localStorage.setItem(
+    'favorites',
+    JSON.stringify(newFavs)
+  )
+  setSnackbarMessage(
+    'Recipe added to favorites'
+  )
+  setSnackbarSeverity('success')
+  setSnackbarOpen(true)
 }
 return (
   <>
@@ -268,17 +265,17 @@ return (
                     color="#4f6f1f"
                   >
                     {recipeImage && (
-                      <CardMedia
-                        component="img"
-                        height="300"
-                        image={recipeImage}
-                        alt={selectedRecipe.name}
-                        sx={{
-                          borderRadius: 2,
-                          mb: 2,
-                          objectFit: 'cover'
-                        }}
-                      />
+                   <img
+                  src={recipeImage}
+                  alt={selectedRecipe.name}
+                  style={{
+                    width: '100%',
+                    height: '300px',
+                    objectFit: 'cover',
+                    borderRadius: '8px',
+                    marginBottom: '16px'
+                  }}
+                />
                     )}
                  
                  <Box
@@ -332,6 +329,23 @@ return (
               )}
             </Box>
           </Box>
+          <Snackbar
+        open={snackbarOpen}
+        autoHideDuration={3000}
+        onClose={() => setSnackbarOpen(false)}
+        anchorOrigin={{
+          vertical: 'top',
+          horizontal: 'right'
+        }}
+      >
+        <Alert
+          severity={snackbarSeverity}
+          variant="filled"
+          onClose={() => setSnackbarOpen(false)}
+        >
+          {snackbarMessage}
+        </Alert>
+      </Snackbar>
         </Container>
       </Box>
     </Box>

@@ -33,36 +33,38 @@ export const getRecipeDetails = (
   client.get(
     `${API_ENDPOINTS.RECIPE.DETAILS}/${dishName}`
   )
-
 export const getDishImage = async (
   dishName: string
 ) => {
   try {
-    const query = encodeURIComponent(`${dishName} indian food`)
-    const url = `https://api.unsplash.com/search/photos?query=${query}&per_page=1`
-    const response = await fetch(url, {
-      headers: {
-        Authorization: `Client-ID ${import.meta.env.VITE_UNSPLASH_ACCESS_KEY}`
-      }
-    })
+    const query = encodeURIComponent(
+      `${dishName} indian food`
+    )
 
-    if (!response.ok) {
-      console.error('Unsplash API error', response.status, response.statusText)
-      return `https://source.unsplash.com/featured/?${query}`
-    }
+    const response = await fetch(
+      `https://api.unsplash.com/search/photos?query=${query}&per_page=1`,
+      {
+        headers: {
+          Authorization: `Client-ID ${
+            import.meta.env.VITE_UNSPLASH_ACCESS_KEY
+          }`
+        }
+      }
+    )
 
     const data = await response.json()
 
-    const imageUrl = data.results?.[0]?.urls?.regular
-    if (imageUrl) return imageUrl
+    console.log('Unsplash Data:', data)
 
-    // fallback to source.unsplash (no API key required)
-    return `https://source.unsplash.com/featured/?${query}`
+    if (data.results && data.results.length > 0) {
+      return data.results[0].urls.regular
+    }
+
+    // static fallback image
+    return 'https://images.unsplash.com/photo-1504674900247-0877df9cc836?q=80&w=1200&auto=format&fit=crop'
   } catch (err) {
-    console.error('Error fetching dish image from Unsplash:', err)
-    const fallback = `https://source.unsplash.com/featured/?${encodeURIComponent(
-      dishName + ' indian food'
-    )}`
-    return fallback
+    console.error('Image fetch error:', err)
+
+    return 'https://images.unsplash.com/photo-1504674900247-0877df9cc836?q=80&w=1200&auto=format&fit=crop'
   }
 }

@@ -7,8 +7,11 @@ import {
   CardContent,
   CardMedia
 } from '@mui/material'
-
+import IconButton from '@mui/material/IconButton'
+import DeleteIcon from '@mui/icons-material/Delete'
+import { useNavigate } from 'react-router-dom'
 import Sidebar from '../components/SideBar'
+import CustomTextField from '../components/CustomTextField'
 
 type FavoriteRecipe = {
   name: string
@@ -18,6 +21,7 @@ type FavoriteRecipe = {
 }
 
 export default function Favorites() {
+  const navigate = useNavigate()
   const [favorites, setFavorites] = useState<FavoriteRecipe[]>([])
 
   useEffect(() => {
@@ -26,6 +30,14 @@ export default function Favorites() {
 
     setFavorites(storedFavs)
   }, [])
+
+  const handleDelete = (recipeName: string) => {
+    const updateFavs=favorites.filter(
+      (recipe) => recipe.name !== recipeName
+    )
+    setFavorites(updateFavs)
+    localStorage.setItem('favorites', JSON.stringify(updateFavs))
+  } 
 
   return (
     <Box sx={{ display: 'flex' }}>
@@ -39,7 +51,20 @@ export default function Favorites() {
         >
           Favorite Recipes ❤️
         </Typography>
-
+      <Box sx={{ display: 'flex', mb: 3 ,width:'800px'}}>
+        <CustomTextField
+          placeholder="Search favorites..."
+          onChange={(e) => {
+            const searchTerm = e.target.value.toLowerCase()
+            const filteredFavs = favorites.filter((recipe) =>
+              recipe.name
+                .toLowerCase()
+                .includes(searchTerm)
+            )
+            setFavorites(filteredFavs)
+          }}
+        />
+      </Box>
         {favorites.length === 0 ? (
           <Typography>
             No favorite recipes added.
@@ -52,26 +77,47 @@ export default function Favorites() {
           >
             {favorites.map(
               (recipe: FavoriteRecipe, index: number) => (
-                <Card key={index}>
+                <Card key={index}
+                  sx={{
+                  cursor: 'pointer'
+                }}
+                onClick={() =>
+                  navigate(`/favorites/${recipe.name}`)
+                }>
                   {recipe.image && (
-                    <CardMedia
-                      component="img"
-                      height="200"
-                      image={recipe.image}
+                  <img
+                      src={recipe.image}
                       alt={recipe.name}
+                      style={{
+                        width: '100%',
+                        height: '200px',
+                        objectFit: 'cover'
+                      }}
                     />
                   )}
 
                   <CardContent>
-                    <Typography variant="h6">
-                      {recipe.name}
-                    </Typography>
+                    <Box display='flex' justifyContent='space-between' alignItems='center'>
+                      <Typography variant="h6">
+                        {recipe.name}
+                      </Typography>
+                        <IconButton
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            handleDelete(recipe.name)
+                          }}
+                          color="error"
+                        >
+                        <DeleteIcon />
+                      </IconButton>
+                    </Box>
                   </CardContent>
                 </Card>
               )
             )}
           </Box>
-        )}
+        )
+        }
       </Box>
     </Box>
   )
